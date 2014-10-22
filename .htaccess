@@ -1,0 +1,7 @@
+RewriteEngine on
+RewriteBase /custom/
+
+ErrorDocument 404 /not_found.html
+
+RewriteCond $1 !^(index\.php|robots\.txt|robots\.txt|favicon.ico|public|not_found\.html|other)
+RewriteRule ^(.*)$ index.php/$1 [L]
