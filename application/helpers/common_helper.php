@@ -228,6 +228,26 @@ function sign_check($key,$parames,$open = 0)
 	
 }
 
+function curlrequest($url, $data, $method = 'post') {
+	$ch = curl_init(); //初始化CURL句柄
+	curl_setopt($ch, CURLOPT_URL, $url); //设置请求的URL
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //设为TRUE把curl_exec()结果转化为字串，而不是直接输出
+	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method); //设置请求方式
+	$array = array();
+	$array[] = "X-HTTP-Method-Override: $method";
+	curl_setopt($ch, CURLOPT_HTTPHEADER, $array); //设置HTTP头信息
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $data); //设置提交的字符串
+
+	$document = curl_exec($ch); //执行预定义的CURL
+	if (!curl_errno($ch)) {
+		$info = curl_getinfo($ch);
+	} else {
+	}
+	curl_close($ch);
+
+	return $document;
+}
+
 /**
  * End of file common_helper.php
  */
