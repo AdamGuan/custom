@@ -60,6 +60,7 @@ mysql -uroot -p66978fa501 custom -e"CREATE TABLE custom.t_student (
   t_student_pwd char(100) NOT NULL COMMENT '登录密码',
   t_status TINYINT(1) NOT NULL DEFAULT '1' COMMENT '状态(0:无效，1有效)',
   t_student_key VARCHAR(250) NOT NULL COMMENT '用户key',
+  t_readboy_id int(10) unsigned NOT NULL COMMENT 'readoby id',
   PRIMARY KEY (t_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='学生表'"
 

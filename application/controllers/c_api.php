@@ -105,6 +105,7 @@ class C_Api extends MY_Controller {
 				'username'=>$result['username'],
 				'userpwd'=>$result['userpwd'],
 				'key'=>$result['key'],
+				'user_avatar_url'=>$result['user_avatar_url'],
 			);
 		}
 		//output
@@ -349,6 +350,45 @@ class C_Api extends MY_Controller {
 		$this->_ajax_echo($data);
 		
 	}
+
+	/**
+	 * 查询某个用户的注册名
+	 * @parame	$parames	array
+	 *				user		用户名(环信中的用户名)
+	 * @echo
+	 */
+
+	public function get_other_user_info($parame = array())
+	{
+		//检查合法
+
+		$this -> load -> model('m_api', 'mapi');
+		$type = 1;
+		$name = isset($parame['name'])?$parame['name']:"";
+		$key = $this->mapi->get_key($name,$type);
+		$sign_check_result = sign_check($key,$parame,$this -> my_config['sign_open']);
+		//调用model
+		if(isset($sign_check_result) && $sign_check_result == 1)
+		{
+			$info = $this->mapi->get_student_info($parame);
+		}
+
+		//data
+		$data = array('responseNo'=>-1);
+		if(isset($sign_check_result) && $sign_check_result ==1 && isset($info) && is_array($info)
+			&& count($info) > 0)
+		{
+			$data = array(
+				'responseNo'=>0,
+				'user_register_name'=>$info['register_name'],
+				'user_avatar_url'=>$info['avatar_url'],
+			);
+		}
+		//output
+		$this->_ajax_echo($data);
+
+	}
+
 	
 	/*
 	public function test($parame = array())

@@ -32,7 +32,7 @@ $config['left_tab']	= array(
 $config['default_page'] = 'c_index/default_page';
 
 //captcha
-$config['captcha_img_path'] = 'public/image/captcha/';
+$config['captcha_img_path'] = './public/image/captcha/';
 $config['captcha_img_url_suffix'] = 'public/image/captcha/';
 $config['captcha_expire_timestamp'] = 7200;
 $config['captcha_img_width'] = 150;

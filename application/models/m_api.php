@@ -150,24 +150,30 @@ class M_api extends MY_Model {
 	 * 注册一个学生到环信
 	 * @$parames	array
 	 *		username	string
+	 *		userpwd     string
 	 * @return	array
-	 *				username	string
-	 *				userpwd		string
-	 *				key			string
+	 *				username	       string
+	 *				userpwd		      string
+	 *				key			      string
+	 *				user_avatar_url		string
 	 */
 	public function register_student($parames = array())
 	{
 		$pwd = null;
 		$user_name = null;
-		if(isset($parames['username']))
+		if(isset($parames['username'],$parames['userpwd']))
 		{
 			//查询在应用数据库中是否存在
-			$sql = 'SELECT t_id,t_student_pwd FROM t_student WHERE t_student_name = "'.$parames['username'].'" LIMIT 1';
+			$sql = 'SELECT t_id,t_student_pwd,t_readboy_id FROM t_student WHERE t_student_name = "'.$parames['username'].'" LIMIT 1';
 			$query = $this->db->query($sql);
 			if($query->num_rows() > 0)	//应用数据库中存在
 			{
 				$row = $query->row_array();
 				$user_name = $row['t_id'];
+				$readboy_userid = $row['t_readboy_id'];
+				//查询readboy info
+				$readboy_userinfo = $this->readboy_info($readboy_userid);
+				$readoby_useravatar_url = $this->readboy_img($readboy_userinfo);
 				//查询环信用户
 				$arrayResult = $this->get_user_from_im($row['t_id']);
 				if(isset($arrayResult,$arrayResult['action']) && !isset($arrayResult['error']))	//在环信中存在
@@ -193,24 +199,32 @@ class M_api extends MY_Model {
 			}
 			else	//在应用数据库中不存在
 			{
-				//写入应用数据库
-				$create_pwd = generate_pwd(6);
-				$sql = 'INSERT INTO t_student(`t_student_name`,`t_student_pwd`) VALUES("'.$parames['username'].'","'.$create_pwd.'")';
-				$query = $this->db->query($sql);
-				if($this->db->insert_id() > 0)	//写入应用数据库成功
+				//从readboy数据库中读取用户的ID
+				$readboy_userinfo = $this->readboy_user_login($parames['username'],$parames['userpwd']);
+
+				if(is_array($readboy_userinfo) && isset($readboy_userinfo['uid']))
 				{
-					//注册到环信
-					$username = $this->db->insert_id();
-					$arrayResult = $this->add_user_to_im($username,$create_pwd);
-					if(isset($arrayResult,$arrayResult['action']) && !isset($arrayResult['error']))	//注册到环信成功
+					//写入应用数据库
+					$readoby_userid = (int)$readboy_userinfo['uid'];
+					$readoby_useravatar_url = $this->readboy_img($readboy_userinfo);
+					$create_pwd = generate_pwd(6);
+					$sql = 'INSERT INTO t_student(`t_student_name`,`t_student_pwd`,`t_readboy_id`) VALUES("'.$parames['username'].'","'.$create_pwd.'",'.$readoby_userid.')';
+					$query = $this->db->query($sql);
+					if($this->db->insert_id() > 0)	//写入应用数据库成功
 					{
-						$pwd = $create_pwd;
-					}
-					else //注册到环信失败
-					{
-						//删除应用数据库数据
-						$sql = 'DELETE FROM t_student WHERE t_student_name = "'.$parames['username'].'"';
-						$this->db->query($sql);
+						//注册到环信
+						$user_name = $this->db->insert_id();
+						$arrayResult = $this->add_user_to_im($user_name,$create_pwd);
+						if(isset($arrayResult,$arrayResult['action']) && !isset($arrayResult['error']))	//注册到环信成功
+						{
+							$pwd = $create_pwd;
+						}
+						else //注册到环信失败
+						{
+							//删除应用数据库数据
+							$sql = 'DELETE FROM t_student WHERE t_student_name = "'.$parames['username'].'"';
+							$this->db->query($sql);
+						}
 					}
 				}
 			}
@@ -232,12 +246,12 @@ class M_api extends MY_Model {
 			}
 			else
 			{
-				return array('username'=>$user_name,'userpwd'=>$pwd,'key'=>$key);
+				$readoby_useravatar_url = isset($readoby_useravatar_url)?$readoby_useravatar_url:null;
+				return array('username'=>$user_name,'userpwd'=>$pwd,'key'=>$key, 'user_avatar_url'=>$readoby_useravatar_url);
 			}
 		}
 		
-//		return array('username'=>$user_name,'userpwd'=>$pwd);
-		return array('username'=>null,'userpwd'=>null,'key'=>null);
+		return array('username'=>null,'userpwd'=>null,'key'=>null,'user_avatar_url'=>null);
 	}
 	
 	/**
@@ -640,7 +654,65 @@ class M_api extends MY_Model {
 		
 		return $list;
 	}
-	
+
+	/**
+	 * 查询某个用户的信息
+	 * @parame	$parames	array
+	 *				user		用户名(环信中的用户名)
+	 * @return $register_name	string
+	 */
+
+	public function get_student_info($parames = array())
+	{
+		$info = array();
+		if(isset($parames['user']))
+		{
+			//获取
+			$query = $this->db->get_where('t_student', array('t_id' => $parames['user']), 1, 0);
+			if ($query->num_rows() > 0)
+			{
+				$row = $query->row_array();
+				$register_name = $row['t_student_name'];
+				//获取用户的头像
+				$t_readboy_id = $row['t_readboy_id'];
+				$readboy_info = $this->readboy_info($t_readboy_id);
+				$avatar_url = $this->readboy_img($readboy_info);
+
+				$info['register_name'] = $register_name;
+				$info['avatar_url'] = $avatar_url;
+			}
+		}
+		return $info;
+	}
+
+	protected function readboy_user_login($user,$pwd){
+		$url = "http://user.readboy.com/index.php?action=login&username=".$user."&password=".$pwd;
+		$data = array();
+		$method = "GET";
+		$readboy_userinfo = curlrequest($url, $data, $method);
+		$readboy_userinfo = json_decode($readboy_userinfo,true);
+		return $readboy_userinfo;
+	}
+
+	protected function readboy_info($userid){
+		$url = "http://user.readboy.com/index.php?action=info&uid=".$userid;
+		$data = array();
+		$method = "GET";
+		$readboy_userinfo = curlrequest($url,$data,$method);
+		$readboy_userinfo = json_decode($readboy_userinfo,true);
+
+		return $readboy_userinfo;
+	}
+
+	protected function readboy_img($readboy_userinfo){
+		$readoby_useravatar_url = null;
+		if(isset($readboy_userinfo,$readboy_userinfo['avatar']))
+		{
+			$readoby_useravatar_url = "http://res.readboy.com/?name=".$readboy_userinfo['avatar'];
+		}
+		return $readoby_useravatar_url;
+	}
+
 }
 
 /**

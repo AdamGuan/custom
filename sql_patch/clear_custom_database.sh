@@ -2,6 +2,7 @@
 mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_custom"
 mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_captcha"
 mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_custom_score"
+mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_custom_relation"
 mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_student"
 mysql -uroot -p66978fa501 -e"TRUNCATE custom.t_custom_relation"
 

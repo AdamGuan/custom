@@ -69,7 +69,7 @@ class M_custom extends MY_Model {
 							$custom_id_tmp = $arrayResult['entities'][0]['uuid'];
 							$time = date('Y-m-d H:i:s',time());
 							//把用户添加到应用数据库
-							$sql = 'INSERT INTO t_custom(`F_custom_id`,`F_custom_name`,`F_custom_nickname`,`F_custom_createtime`,`F_custom_modifytime`,`F_groupid`) VALUES("'.$custom_id_tmp.'","'.$parames['name'].'","'.$parames['name'].'","'.$time.'","'.$time.'",'.$groupid.')';
+							$sql = 'INSERT INTO t_custom(`F_custom_id`,`F_custom_name`,`F_custom_nickname`,`F_custom_createtime`,`F_custom_modifytime`,`F_groupid`,`F_custom_pwd`) VALUES("'.$custom_id_tmp.'","'.$parames['name'].'","'.$parames['name'].'","'.$time.'","'.$time.'",'.$groupid.',"'.$this->my_config['custom_pwd'].'")';
 							$this->db->query($sql);
 							$tmp = $this->db->insert_id();
 							if(isset($tmp) && $tmp > 0)
